@@ -1,6 +1,7 @@
 'use strict'
 
 var User = require('../models/user');
+var Follow = require('../models/follow');
 var bcrypt = require('bcrypt-nodejs');
 var jwt = require('../services/jwt');
 var mongoosePaginate = require('mongoose-pagination');
@@ -111,8 +112,28 @@ function getUser(req, res) {
 
         if(!user) return res.status(404).send({message: 'El usuario no existe'});
 
-        return res.status(200).send({user});
+        followThisUser(req.user.sub, userId).then((value) => {
+            user.password = undefined;
+            return res.status(200).send({user, 
+                                        following: value.following,
+                                        followed: value.followed });
+        }); 
     });
+}
+
+async function followThisUser(identity_user_id, user_id) {
+    var following = await Follow.findOne({"user": identity_user_id, "followed": user_id}).exec((err, follow) => {    
+        if(err) return handleError(err);
+        return follow;
+    });
+    var followed = await Follow.findOne({"user": user_id, "followed": identity_user_id}).exec((err, follow) => {    
+        if(err) return handleError(err);
+        return follow;
+    });
+    return {
+        following: following,
+        followed: followed
+    }
 }
 
 //Devolver un listado de usuarios paginado
@@ -204,6 +225,7 @@ function removeFilesOfUploads(res, file_path, message){
     });
 }
 
+// Obtener imagen de usuario
 function getImageFile(req, res) {
     var image_file = req.params.imageFile;
     var path_file = './uploads/users/'+image_file;
@@ -217,6 +239,40 @@ function getImageFile(req, res) {
     });
 }
 
+function getCounters(req, res) {
+    var userId = req.params.sub;
+
+    if(req.params.id){
+        userId = req.params.id;
+    }
+    getCountFollow(userId).then((value) => {
+        return res.status(200).send({value});
+    });
+}
+
+async function getCountFollow(user_id) {
+
+    var following = await Follow.countDocuments({"user":user_id}).exec().then((count) => {
+        //if (err) return handleError(err);
+        console.log(count);        
+        return count;
+    });
+
+    var followed = await Follow.countDocuments({"followed":user_id}).exec().then((count) => {
+        //if (err) return handleError(err); 
+        console.log(count);         
+        return count;
+    });
+
+    console.log(followed);
+    console.log(following);
+
+    return {
+        following: following,
+        followed: followed        
+    }
+}
+
 module.exports = {
     home,
     pruebas,
@@ -226,5 +282,6 @@ module.exports = {
     getUsers,
     updateUser,
     uploadImage,
-    getImageFile
+    getImageFile,
+    getCounters
 }
