@@ -239,6 +239,40 @@ function getImageFile(req, res) {
     });
 }
 
+function getCounters(req, res) {
+    var userId = req.params.sub;
+
+    if(req.params.id){
+        userId = req.params.id;
+    }
+    getCountFollow(userId).then((value) => {
+        return res.status(200).send({value});
+    });
+}
+
+async function getCountFollow(user_id) {
+
+    var following = await Follow.countDocuments({"user":user_id}).exec().then((count) => {
+        //if (err) return handleError(err);
+        console.log(count);        
+        return count;
+    });
+
+    var followed = await Follow.countDocuments({"followed":user_id}).exec().then((count) => {
+        //if (err) return handleError(err); 
+        console.log(count);         
+        return count;
+    });
+
+    console.log(followed);
+    console.log(following);
+
+    return {
+        following: following,
+        followed: followed        
+    }
+}
+
 module.exports = {
     home,
     pruebas,
@@ -248,5 +282,6 @@ module.exports = {
     getUsers,
     updateUser,
     uploadImage,
-    getImageFile
+    getImageFile,
+    getCounters
 }
