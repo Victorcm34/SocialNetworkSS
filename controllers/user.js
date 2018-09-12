@@ -187,15 +187,10 @@ function uploadImage(req, res) {
 
     if(req.files) {
         var file_path = req.files.image.path;
-        console.log(file_path);
         var file_split = file_path.split('\\');
-        console.log(file_split);
         var file_name = file_split[2];
-        console.log(file_name);
         var ext_split = file_name.split('\.');
-        console.log(ext_split);
         var file_ext = ext_split[1];
-        console.log(file_ext);
 
         if(userId != req.user.sub){
             return removeFilesOfUploads(res, file_path, 'No tienes permiso para actualizar los datos de este usuario');            
@@ -252,20 +247,13 @@ function getCounters(req, res) {
 
 async function getCountFollow(user_id) {
 
-    var following = await Follow.countDocuments({"user":user_id}).exec().then((count) => {
-        //if (err) return handleError(err);
-        console.log(count);        
+    var following = await Follow.countDocuments({"user":user_id}).exec().then((count) => { 
         return count;
     });
 
-    var followed = await Follow.countDocuments({"followed":user_id}).exec().then((count) => {
-        //if (err) return handleError(err); 
-        console.log(count);         
+    var followed = await Follow.countDocuments({"followed":user_id}).exec().then((count) => {        
         return count;
     });
-
-    console.log(followed);
-    console.log(following);
 
     return {
         following: following,
