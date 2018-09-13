@@ -7,6 +7,7 @@ var jwt = require('../services/jwt');
 var mongoosePaginate = require('mongoose-pagination');
 var fs = require('fs');
 var path = require('path');
+var Publication = require('../models/publication');
 
 //Metodos de prueba
 function home(req, res) {
@@ -255,9 +256,14 @@ async function getCountFollow(user_id) {
         return count;
     });
 
+    var publications = await Publication.countDocuments({"user": user_id}).exec().then((count) => {
+        return count;
+    });
+
     return {
         following: following,
-        followed: followed        
+        followed: followed,
+        publications: publications    
     }
 }
 
