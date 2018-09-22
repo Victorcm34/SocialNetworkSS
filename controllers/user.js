@@ -153,13 +153,56 @@ function getUsers(req, res) {
 
         if(!users) return res.status(404).send({message: 'No hay usuarios disponibles'});
 
-        return res.status(200).send({
-            users,
-            total,
-            pages: Math.ceil(total/itemsPerPage)
-        });
+        followUsersIds(identity_user_id).then(value => {
+            return res.status(200).send({
+              users,
+              users_following: value.following,
+              users_followed: value.followed,
+              total,
+              pages: Math.ceil(total / itemsPerPage)
+            });
+        });    
     });
 }
+
+async function followUsersIds(user_id) {
+    try {
+      var following = await Follow.find({ user: user_id })
+        .select({ _id: 0, _v: 0, user: 0 })
+        .exec()
+        .then(follows => {
+          var follows_clean = [];
+          follows.forEach(follow => {
+            follows_clean.push(follow.followed);
+          });
+          return follows_clean;
+        })
+        .catch(err => {
+          return handleError(err);
+        });
+  
+      var followed = await Follow.find({ followed: user_id })
+        .select({ _id: 0, _v: 0, followed: 0 })
+        .exec()
+        .then(follows => {
+          var follows_clean = [];
+          follows.forEach(follow => {
+            follows_clean.push(follow.user);
+          });
+          return follows_clean;
+        })
+        .catch(err => {
+          return handleError(err);
+        });
+  
+      return {
+        following: following,
+        followed: followed
+      };
+    } catch (err) {
+      return handleError(err);
+    }
+  }
 
 //Editar datos usuarios
 function updateUser(req, res) {
@@ -173,13 +216,27 @@ function updateUser(req, res) {
         return res.status(500).send({message: 'No tienes permiso para actualizar los datos de este usuario'});
     }
 
-    User.findByIdAndUpdate(userId, update, {new: true}, (err, userUpdated) => {
-        if(err) return res.status(500).send({message: 'Error en la petición'});
+    User.find({ $or: [
+            {email: update.email},
+            {nick: update.nick}
+        ]}).exec((err, users) => {
 
-        if(!userUpdated) return res.status(404).send({message: 'No se ha podido actualizar el usuario'});
+            var user_isset = false;
+            users.forEach((user) => {
+                if (user && user._id != userId) user_isset = true;
+            });
 
-        return res.status(200).send({user: userUpdated});
-    });
+            if(user_isset) return res.status(404).send({message: 'Los datos ya están en uso'});
+
+            User.findByIdAndUpdate(userId, update, {new: true}, (err, userUpdated) => {
+                console.log(err);
+                if(err) return res.status(500).send({message: 'Error en la petición'});
+        
+                if(!userUpdated) return res.status(404).send({message: 'No se ha podido actualizar el usuario'});
+        
+                return res.status(200).send({user: userUpdated});
+            });
+    })    
 }
 
 //Subir archivos de imagen/avatar de usuario
