@@ -55,13 +55,56 @@ function getFollowingUsers(req, res) {
         if(err) return res.status(500).send({message: 'Error en el servidor'});
 
         if(!follows) return res.status(404).send({message: 'No estás siguiendo a ningún usuario'});
-
-        return res.status(200).send({
-            total: total,
-            pages: Math.ceil(total/itemsPerPage),
-            follows
+        
+        followUsersIds(req.user.sub).then(value => {
+            return res.status(200).send({
+                total: total,
+                pages: Math.ceil(total/itemsPerPage),
+                follows,
+                users_following: value.following,
+                users_followed: value.followed
+            });
         });
     });
+}
+
+async function followUsersIds(user_id) {
+    try {
+      var following = await Follow.find({ user: user_id })
+        .select({ _id: 0, _v: 0, user: 0 })
+        .exec()
+        .then(follows => {
+          var follows_clean = [];
+          follows.forEach(follow => {
+            follows_clean.push(follow.followed);
+          });
+          return follows_clean;
+        })
+        .catch(err => {
+          return handleError(err);
+        });
+  
+      var followed = await Follow.find({ followed: user_id })
+        .select({ _id: 0, _v: 0, followed: 0 })
+        .exec()
+        .then(follows => {
+          var follows_clean = [];
+          follows.forEach(follow => {
+            follows_clean.push(follow.user);
+          });
+          return follows_clean;
+        })
+        .catch(err => {
+          return handleError(err);
+        });
+  
+      return {
+        following: following,
+        followed: followed
+      };
+    } catch (err) {
+      return handleError(err);
+    }
 }
 
 function getFollowedUsers(req,res) {
@@ -86,10 +129,14 @@ function getFollowedUsers(req,res) {
 
         if(!follows) return res.status(404).send({message: 'No te sigue ningún usuario'});
 
-        return res.status(200).send({
-            total: total,
-            pages: Math.ceil(total/itemsPerPage),
-            follows
+        followUsersIds(req.user.sub).then(value => {
+            return res.status(200).send({
+                total: total,
+                pages: Math.ceil(total/itemsPerPage),
+                follows,
+                users_following: value.following,
+                users_followed: value.followed
+            });
         });
     });
 }

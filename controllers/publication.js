@@ -78,14 +78,14 @@ function getPublicationsUser(req, res) {
         page = req.params.page;
     }
 
-    var user_id = req.user.sub;
+    var user = req.user.sub;
     if (req.params.user) {
-        user_id = req.params.user;
+        user = req.params.user;
     }
 
     var itemsPerPage = 4;
 
-        Publication.find({user: user_id})
+        Publication.find({user: user})
         .sort('-created_at')
         .populate('user')
         .paginate(page, itemsPerPage, (err, publications, total) =>{
@@ -118,7 +118,6 @@ function deletePublication(req, res) {
 
     Publication.find({'user': req.user.sub, '_id': publicationId}).remove(err => {
         if(err) return res.status(500).send({message: 'Error al borrar publicacion'});
-        if(!publicationRemoved) return res.status(404).send({message: 'No se ha borrado la publicacion'});
 
         return res.status(200).send({message: 'Publicacion eliminada'});
     });
@@ -129,9 +128,9 @@ function uploadImage(req, res) {
 
     if(req.files) {
         var file_path = req.files.image.path;
-        var file_split = file_path.split('\\');
+        var file_split = file_path.split('/');
         var file_name = file_split[2];
-        var ext_split = file_name.split('\.');
+        var ext_split = file_name.split('.');
         var file_ext = ext_split[1];       
 
         if(file_ext == 'png' || file_ext == 'jpg' || file_ext == 'jpeg' || file_ext == 'gif') {

@@ -202,7 +202,7 @@ async function followUsersIds(user_id) {
     } catch (err) {
       return handleError(err);
     }
-  }
+}
 
 //Editar datos usuarios
 function updateUser(req, res) {
